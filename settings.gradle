@@ -1,0 +1,6 @@
+rootProject.name = 'lostorm'
+
+include 'mapper'
+include 'annotations'
+include 'annotation-processor'
+

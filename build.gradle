@@ -1,2 +1,28 @@
+plugins {
+    id 'maven-publish'
+}
+
 group 'net.lostillusion'
 version '1.0-SNAPSHOT'
+
+subprojects {
+    apply plugin: 'maven-publish'
+    apply plugin: 'java'
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = 'https://maven.pkg.github.com/lost-illusi0n/lostorm'
+                credentials {
+                    username = project.findProperty("gpr.user") ?: System.getenv("lostorm_user")
+                    password = project.findProperty("gpr.key") ?: System.getenv("lostorm_token")
+                }
+            }
+        }
+        publications {
+            create("gpr", MavenPublication) {
+                from(components["java"])
+            }
+        }
+    }
+}

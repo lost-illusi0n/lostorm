@@ -4,7 +4,7 @@ import net.lostillusion.lostorm.mapper.operations.Operation
 import java.sql.Connection
 import java.sql.DriverManager
 
-class Session(private val host: String, private val user: String, private val pass: String, driver: String) {
+class Session(private val host: String, private val user: String, private val pass: String, driver: String = "org.postgresql.Driver") {
     init {
         Class.forName(driver)
     }

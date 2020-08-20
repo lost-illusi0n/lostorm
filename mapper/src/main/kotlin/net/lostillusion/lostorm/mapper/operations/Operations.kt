@@ -1,3 +1,5 @@
+@file:Suppress("MemberVisibilityCanBePrivate")
+
 package net.lostillusion.lostorm.mapper.operations
 
 import net.lostillusion.lostorm.mapper.*
@@ -52,6 +54,14 @@ class InsertValuesOp<D: Any>(
     override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.values.map { it.get(data) }.joinToString(",", transform = ::toSafeSQL)})"
 }
 
+class InsertOnConflictOp<D: Any>(
+    private val insertOp: InsertValuesOp<D>,
+    private val conflictingColumn: Column<*>,
+    private val action: ConflictingUpdateSetOp<D>?
+): Operation.UpdateOperation<D>(insertOp.entity) {
+    override fun generateStatement(): String = "${insertOp.generateStatement()} on conflict (${conflictingColumn.columnName}) do ${action?.generateStatement() ?: "nothing"}"
+}
+
 class UpdateOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) {
     override fun generateStatement(): String = "update ${entity.tableName}"
 }
@@ -61,7 +71,7 @@ class UpdateSetOp<D: Any>(
     private val eqs: List<EqExpression<*>>
 ): Operation.UpdateOperation<D>(updateOp.entity) {
     override fun generateStatement(): String =
-        "${updateOp.generateStatement()} set ${eqs.map(EqExpression<*>::generateExpression).joinToString(", ")}"
+        "${updateOp.generateStatement()} set ${eqs.joinToString(", ", transform = EqExpression<*>::generateExpression)}"
 }
 
 class UpdateSetWhereOp<D: Any>(
@@ -69,6 +79,17 @@ class UpdateSetWhereOp<D: Any>(
     private val expression: Expression
 ): Operation.UpdateOperation<D>(updateOp.entity) {
     override fun generateStatement(): String = "${updateOp.generateStatement()} where ${expression.generateExpression()}"
+}
+
+class ConflictingUpdateOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) {
+    override fun generateStatement(): String = "update"
+}
+
+class ConflictingUpdateSetOp<D: Any>(
+    private val updateOp: ConflictingUpdateOp<D>,
+    private val eqs: List<EqExpression<*>>
+): Operation.UpdateOperation<D>(updateOp.entity) {
+    override fun generateStatement(): String = "${updateOp.generateStatement()} set ${eqs.joinToString(", ", transform = EqExpression<*>::generateExpression)}"
 }
 
 class DeleteOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) {
@@ -80,6 +101,11 @@ class DeleteWhereOp<D: Any>(
     private val expression: Expression
 ): Operation.UpdateOperation<D>(deleteOp.entity) {
     override fun generateStatement(): String = "${deleteOp.generateStatement()} where ${expression.generateExpression()}"
+}
+
+class ConflictContext<D: Any>(private val entity: Entity<D>) {
+    fun update() = ConflictingUpdateOp(entity)
+    fun nothing(): ConflictingUpdateSetOp<D>? = null
 }
 
 fun <D: Any> select(entity: Entity<D>) = SelectOp(entity)
@@ -94,6 +120,12 @@ fun <D: Any> insert(entity: Entity<D>) = InsertOp(entity)
 
 infix fun <D: Any> InsertOp<D>.values(data: D) = InsertValuesOp(this, data)
 
+fun <D: Any> InsertValuesOp<D>.onConflict(conflictingColumn: Column<*>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, conflictingColumn, action)
+
+fun <D: Any> InsertValuesOp<D>.onConflict(conflictingColumn: Column<*>, action: ConflictContext<D>.() -> ConflictingUpdateSetOp<D>?) = InsertOnConflictOp(this, conflictingColumn, action(ConflictContext(entity)))
+
+fun <D: Any> InsertValuesOp<D>.onConflictDoNothing(conflictingColumn: Column<*>) = InsertOnConflictOp(this, conflictingColumn, null)
+
 fun <D: Any> update(entity: Entity<D>) = UpdateOp(entity)
 
 infix fun <D: Any> UpdateOp<D>.set(data: D) = UpdateSetOp(this, entity.toEqExpressions(data))
@@ -101,6 +133,12 @@ infix fun <D: Any> UpdateOp<D>.set(data: D) = UpdateSetOp(this, entity.toEqExpre
 fun <D: Any> UpdateOp<D>.set(vararg expressions: EqExpression<*>) = UpdateSetOp(this, expressions.toList())
 
 infix fun <D: Any> UpdateSetOp<D>.where(condition: Expression) = UpdateSetWhereOp(this, condition)
+
+fun <D: Any> conflictingUpdate(entity: Entity<D>) = ConflictingUpdateOp(entity)
+
+infix fun <D: Any> ConflictingUpdateOp<D>.set(data: D) = ConflictingUpdateSetOp(this, entity.toEqExpressions(data))
+
+fun <D: Any> ConflictingUpdateOp<D>.set(vararg expressions: EqExpression<*>) = ConflictingUpdateSetOp(this, expressions.toList())
 
 fun <D: Any> delete(entity: Entity<D>) = DeleteOp(entity)
 

@@ -71,18 +71,18 @@ class AnnotationProcessor: AbstractProcessor() {
                     TypeKind.BOOLEAN -> {
                         typeName = Column::class.asTypeName().parameterizedBy(Boolean::class.asTypeName().copy(nullable = config?.nullable == true))
                         initializer = """%M("$columnName")"""
-                        initMember = MemberName("net.lostillusion.postgresmapper.mapper", "bool")
+                        initMember = MemberName("net.lostillusion.lostorm.mapper", "bool")
                     }
                     //pretty sure this will always be a string
                     TypeKind.DECLARED -> {
                         typeName = Column::class.asTypeName().parameterizedBy(String::class.asTypeName().copy(nullable = config?.nullable == true))
                         initializer = """%M("$columnName")"""
-                        initMember = MemberName("net.lostillusion.postgresmapper.mapper", "text")
+                        initMember = MemberName("net.lostillusion.lostorm.mapper", "text")
                     }
                     TypeKind.INT -> {
                         typeName = Column::class.asTypeName().parameterizedBy(Int::class.asTypeName().copy(nullable = config?.nullable == true))
                         initializer = """%M("$columnName")"""
-                        initMember = MemberName("net.lostillusion.postgresmapper.mapper", "int")
+                        initMember = MemberName("net.lostillusion.lostorm.mapper", "int")
                     }
                     else -> throw UnsupportedEntityValueType("Value ${enclosed.simpleName} in $className cannot be converted to a column! Type found: ${enclosed.asType().kind.name}")
                 }

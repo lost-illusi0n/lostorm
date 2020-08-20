@@ -3,7 +3,6 @@ plugins {
 }
 
 group 'net.lostillusion.lostorm'
-version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()

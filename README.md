@@ -1,15 +1,19 @@
 # Lostorm
 Lostorm is a simplistic and basic ORM to deal with PostgreSQL databases. Requiring very little boilerplate code, this ORM is lightweight and can be setup very quickly.
 ### Dependency Setup
+###### Warning: Apparently Github Package Repository requires authentications to download packages. While I work on publishing this somewhere else a workaround is to autheneticate with Github directly at this URL, https://maven.pkg.github.com/lost-illusi0n/lostorm/net/lostillusion/lostorm/mapper. Doing this should allow Gradle to download the packages.
 ##### Gradle
 ```
+plugins {
+    id 'org.jetbrains.kotlin.kapt' version '1.3.72'
+}
 repositories {
     maven { url('https://maven.pkg.github.com/lost-illusi0n/lostorm') }
 }
 dependencies {
-    kapt 'net.lostillusion.lostorm:annotation-processor:1.0-SNAPSHOT'
-    implementation 'net.lostillusion.lostorm:annotations:1.0-SNAPSHOT'
-    implementation 'net.lostillusion.lostorm:mapper:1.0-SNAPSHOT'
+    kapt 'net.lostillusion.lostorm:annotation-processor:1.1.0'
+    implementation 'net.lostillusion.lostorm:annotations:1.1.0'
+    implementation 'net.lostillusion.lostorm:mapper:1.1.0'
 }
 ```
 ##### Maven

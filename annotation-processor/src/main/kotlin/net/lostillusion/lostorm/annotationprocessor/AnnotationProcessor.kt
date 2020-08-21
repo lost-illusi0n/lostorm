@@ -121,7 +121,7 @@ class AnnotationProcessor: AbstractProcessor() {
                                 initMember = MemberName("net.lostillusion.lostorm.mapper", "binary")
                             }
                             else -> {
-                                throw UnsupportedEntityValueType("Array ${enclosed.simpleName} in $className cannot be converted to a column! Type found: ${enclosed.javaToKotlinType()?.packageName ?: enclosed.asType()}")
+                                throw UnsupportedEntityValueType("Array ${enclosed.simpleName} in $className cannot be converted to a column! Type found: ${enclosed.asType()}")
                             }
                         }
                     }
@@ -153,11 +153,6 @@ class AnnotationProcessor: AbstractProcessor() {
         println("writing generated files to: $kaptKotlinGeneratedDir")
         fileBuilder.build().writeTo(File(kaptKotlinGeneratedDir!!))
     }
-}
-
-private fun Element.javaToKotlinType(): ClassName? {
-    val className = JavaToKotlinClassMap.INSTANCE.mapJavaToKotlin(FqName(this.asType().asTypeName().toString()))?.asSingleFqName()?.asString()
-    return if (className == null) null else ClassName.bestGuess(className)
 }
 
 class UnsupportedEntityValueType(override val message: String): Exception()

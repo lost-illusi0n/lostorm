@@ -17,7 +17,10 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.TypeKind
+import javax.lang.model.type.TypeVisitor
 import kotlin.reflect.KProperty1
+import kotlin.reflect.jvm.internal.impl.builtins.jvm.JavaToKotlinClassMap
+import kotlin.reflect.jvm.internal.impl.name.FqName
 
 @Suppress("unused")
 @AutoService(Processor::class)
@@ -68,26 +71,65 @@ class AnnotationProcessor: AbstractProcessor() {
                 var initializer: String?
                 val initMember: MemberName?
                 when(enclosed.asType().kind) {
+                    TypeKind.DECLARED -> {
+                        when(Class.forName(enclosed.asType().toString()).kotlin) {
+                            String::class -> {
+                                typeName = Column::class.asTypeName().parameterizedBy(String::class.asTypeName().copy(nullable = config?.nullable == true))
+                                initializer = """%M("$columnName")"""
+                                initMember = MemberName("net.lostillusion.lostorm.mapper", "text")
+                            }
+                            else -> {
+                                throw UnsupportedEntityValueType("Declared value ${enclosed.simpleName} in $className cannot be converted to a column! Type found: ${enclosed.asType()}")
+                            }
+                        }
+                    }
                     TypeKind.BOOLEAN -> {
                         typeName = Column::class.asTypeName().parameterizedBy(Boolean::class.asTypeName().copy(nullable = config?.nullable == true))
                         initializer = """%M("$columnName")"""
                         initMember = MemberName("net.lostillusion.lostorm.mapper", "bool")
-                    }
-                    //pretty sure this will always be a string
-                    TypeKind.DECLARED -> {
-                        typeName = Column::class.asTypeName().parameterizedBy(String::class.asTypeName().copy(nullable = config?.nullable == true))
-                        initializer = """%M("$columnName")"""
-                        initMember = MemberName("net.lostillusion.lostorm.mapper", "text")
                     }
                     TypeKind.INT -> {
                         typeName = Column::class.asTypeName().parameterizedBy(Int::class.asTypeName().copy(nullable = config?.nullable == true))
                         initializer = """%M("$columnName")"""
                         initMember = MemberName("net.lostillusion.lostorm.mapper", "int")
                     }
+                    TypeKind.LONG -> {
+                        typeName = Column::class.asTypeName().parameterizedBy(Long::class.asTypeName().copy(nullable = config?.nullable == true))
+                        initializer = """%M("$columnName")"""
+                        initMember = MemberName("net.lostillusion.lostorm.mapper", "long")
+                    }
+                    TypeKind.SHORT -> {
+                        typeName = Column::class.asTypeName().parameterizedBy(Short::class.asTypeName().copy(nullable = config?.nullable == true))
+                        initializer = """%M("$columnName")"""
+                        initMember = MemberName("net.lostillusion.lostorm.mapper", "short")
+                    }
+                    TypeKind.FLOAT -> {
+                        typeName = Column::class.asTypeName().parameterizedBy(Float::class.asTypeName().copy(nullable = config?.nullable == true))
+                        initializer = """%M("$columnName")"""
+                        initMember = MemberName("net.lostillusion.lostorm.mapper", "real")
+                    }
+                    TypeKind.DOUBLE -> {
+                        typeName = Column::class.asTypeName().parameterizedBy(Double::class.asTypeName().copy(nullable = config?.nullable == true))
+                        initializer = """%M("$columnName")"""
+                        initMember = MemberName("net.lostillusion.lostorm.mapper", "float")
+                    }
+                    TypeKind.ARRAY -> {
+                        when(enclosed.asType().asTypeName()) {
+                            Array<Byte>::class.parameterizedBy(Byte::class) -> {
+                                typeName = Column::class.asTypeName().parameterizedBy(ByteArray::class.asTypeName().copy(nullable = config?.nullable == true))
+                                initializer = """%M("$columnName")"""
+                                initMember = MemberName("net.lostillusion.lostorm.mapper", "binary")
+                            }
+                            else -> {
+                                throw UnsupportedEntityValueType("Array ${enclosed.simpleName} in $className cannot be converted to a column! Type found: ${enclosed.javaToKotlinType()?.packageName ?: enclosed.asType()}")
+                            }
+                        }
+                    }
                     else -> throw UnsupportedEntityValueType("Value ${enclosed.simpleName} in $className cannot be converted to a column! Type found: ${enclosed.asType().kind.name}")
                 }
                 if(config?.unique == true) initializer += ".unique()"
                 if(config?.nullable == true) initializer += ".nullable()"
+                if(config?.primaryKey == true) initializer += ".primary()"
                 columns.add(enclosed.simpleName.toString())
                 ctvs.add("${enclosed.simpleName} to ${className}::${enclosed.simpleName}")
                 PropertySpec.builder(enclosed.simpleName.toString(), typeName).initializer(initializer, initMember).mutable(false).build().let(entityBuilder::addProperty)
@@ -111,6 +153,11 @@ class AnnotationProcessor: AbstractProcessor() {
         println("writing generated files to: $kaptKotlinGeneratedDir")
         fileBuilder.build().writeTo(File(kaptKotlinGeneratedDir!!))
     }
+}
+
+private fun Element.javaToKotlinType(): ClassName? {
+    val className = JavaToKotlinClassMap.INSTANCE.mapJavaToKotlin(FqName(this.asType().asTypeName().toString()))?.asSingleFqName()?.asString()
+    return if (className == null) null else ClassName.bestGuess(className)
 }
 
 class UnsupportedEntityValueType(override val message: String): Exception()

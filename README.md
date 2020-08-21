@@ -11,9 +11,9 @@ repositories {
     maven { url('https://maven.pkg.github.com/lost-illusi0n/lostorm') }
 }
 dependencies {
-    kapt 'net.lostillusion.lostorm:annotation-processor:1.1.0'
-    implementation 'net.lostillusion.lostorm:annotations:1.1.0'
-    implementation 'net.lostillusion.lostorm:mapper:1.1.0'
+    kapt 'net.lostillusion.lostorm:annotation-processor:1.2.0'
+    implementation 'net.lostillusion.lostorm:annotations:1.2.0'
+    implementation 'net.lostillusion.lostorm:mapper:1.2.0'
 }
 ```
 ##### Maven
@@ -31,7 +31,7 @@ These two lines will generate a ``Entity``. This entity will be used within DSLs
 #### Session Initialization
 The session class is what will make the clock tick. Using this you can query and update your database with the DSL provided to you by Lostorm or even raw SQL.
 ```kotlin
-val session = Session("jdbc:postgresql://example", "user", "pass", "org.postgresql.Driver")
+val session = Session("jdbc:postgresql://example", "user", "pass")
 ```
 #### Realworld Examples
 These examples will show you how you might interact with Lostorm in a real project.
@@ -65,16 +65,21 @@ session {
 ```
 ### Wiki (W.I.P)
 #### Currently Supported Field Types
-- String
-- Boolean
-- Int
-- *More in the future, create an issue if one is missing.*
+- String (text)
+- Boolean (boolean)
+- Int (int)
+- Short (smallint)
+- Long (bigint)
+- Float (real)
+- Double (float)
+- ByteArray (bytea)
+- *Create an issue if one is missing.*
 #### Column Customization
 You may want to make certain columns nullable or unique, which is completaly doable with Lostorm.
 ```kotlin
 @EntityDataClass
 data class Human(
-    @Columns(unique = true) val name: String, 
+    @Columns(primaryKey = true) val name: String, 
     @Columns(nullable = true) val middleName: String?, 
     val alive: Boolean
 )

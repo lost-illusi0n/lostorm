@@ -8,13 +8,14 @@ abstract class Entity<D: Any>(
 ) {
     abstract val columns: List<Column<*>>
     abstract val columnsToValues: Map<Column<*>, KProperty1<D, *>>
+    val primaryKey by lazy { PrimaryKey(*columns.filter { it.isPrimary }.toTypedArray()) }
 
     abstract fun createDataClass(values: List<*>): D
 
+    @Suppress("UNCHECKED_CAST")
     fun toEqExpressions(data: D): List<EqExpression<*>> =
         columnsToValues.map { (it.key as Column<Any?>) eq it.value.get(data) }
 
-    @Suppress("UNCHECKED_CAST")
     fun toExpression(data: D): Expression {
         val eqs = toEqExpressions(data).toMutableList()
         val first = eqs.removeAt(0)

@@ -51,15 +51,15 @@ class InsertValuesOp<D: Any>(
     private val insertOp: InsertOp<D>,
     private val data: D
 ): Operation.UpdateOperation<D>(insertOp.entity) {
-    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.values.map { it.get(data) }.joinToString(",", transform = ::toSafeSQL)})"
+    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.values.map { it.get(data) }.joinToString(", ", transform = ::toSafeSQL)})"
 }
 
 class InsertOnConflictOp<D: Any>(
     private val insertOp: InsertValuesOp<D>,
-    private val conflictingColumn: Column<*>,
+    private vararg val conflictingColumns: Column<*>,
     private val action: ConflictingUpdateSetOp<D>?
 ): Operation.UpdateOperation<D>(insertOp.entity) {
-    override fun generateStatement(): String = "${insertOp.generateStatement()} on conflict (${conflictingColumn.columnName}) do ${action?.generateStatement() ?: "nothing"}"
+    override fun generateStatement(): String = "${insertOp.generateStatement()} on conflict (${conflictingColumns.joinToString(", ", transform = Column<*>::columnName)}) do ${action?.generateStatement() ?: "nothing"}"
 }
 
 class UpdateOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) {
@@ -120,11 +120,11 @@ fun <D: Any> insert(entity: Entity<D>) = InsertOp(entity)
 
 infix fun <D: Any> InsertOp<D>.values(data: D) = InsertValuesOp(this, data)
 
-fun <D: Any> InsertValuesOp<D>.onConflict(conflictingColumn: Column<*>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, conflictingColumn, action)
+fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, *conflictingColumns, action = action)
 
-fun <D: Any> InsertValuesOp<D>.onConflict(conflictingColumn: Column<*>, action: ConflictContext<D>.() -> ConflictingUpdateSetOp<D>?) = InsertOnConflictOp(this, conflictingColumn, action(ConflictContext(entity)))
+fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*>, action: ConflictContext<D>.() -> ConflictingUpdateSetOp<D>?) = InsertOnConflictOp(this, *conflictingColumns, action = action(ConflictContext(entity)))
 
-fun <D: Any> InsertValuesOp<D>.onConflictDoNothing(conflictingColumn: Column<*>) = InsertOnConflictOp(this, conflictingColumn, null)
+fun <D: Any> InsertValuesOp<D>.onConflictDoNothing(vararg conflictingColumns: Column<*>) = InsertOnConflictOp(this, *conflictingColumns, action = null)
 
 fun <D: Any> update(entity: Entity<D>) = UpdateOp(entity)
 

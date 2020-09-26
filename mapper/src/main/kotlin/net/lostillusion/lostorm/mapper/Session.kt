@@ -12,7 +12,7 @@ class Session(private val host: String, private val user: String, private val pa
     fun <T> connection(action: Connection.() -> T) =
         DriverManager.getConnection(host, user, pass).use(action)
 
-    operator fun invoke(function: Session.() -> Any) = function()
+    operator fun <T> invoke(function: Session.() -> T) = function()
 }
 
 infix fun <R> Session.transaction(operation: () -> Operation<*, R>) = Transaction(operation(), this).commit()

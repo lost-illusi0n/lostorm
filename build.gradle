@@ -3,12 +3,12 @@ plugins {
 }
 
 group 'net.lostillusion'
-version '1.2.1'
+version '1.2.2'
 
 subprojects {
     apply plugin: 'maven-publish'
     apply plugin: 'java'
-    version '1.2.1'
+    version '1.2.2'
     publishing {
         repositories {
             maven {

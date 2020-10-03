@@ -6,15 +6,15 @@ import kotlin.reflect.KProperty1
 abstract class Entity<D: Any>(
     val tableName: String
 ) {
-    abstract val columns: List<Column<*>>
-    abstract val columnsToValues: Map<Column<*>, KProperty1<D, *>>
+    abstract val columns: List<Column<Any, Any>>
+    abstract val columnsToValues: Map<Column<Any, Any>, KProperty1<D, *>>
     val primaryKey by lazy { PrimaryKey(*columns.filter { it.isPrimary }.toTypedArray()) }
 
     abstract fun createDataClass(values: List<*>): D
 
     @Suppress("UNCHECKED_CAST")
     fun toEqExpressions(data: D): List<EqExpression<*>> =
-        columnsToValues.map { (it.key as Column<Any?>) eq it.value.get(data) }
+        columnsToValues.map { it.key eq it.value.get(data) }
 
     fun toExpression(data: D): Expression {
         val eqs = toEqExpressions(data).toMutableList()

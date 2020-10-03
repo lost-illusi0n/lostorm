@@ -31,7 +31,7 @@ class SelectOp<D: Any>(entity: Entity<D>): Operation.SelectOperation<D>(entity),
 
 class SelectCountOp<D: Any>(
     entity: Entity<D>,
-    private val column: Column<*>? = null
+    private val column: Column<*, *>? = null
 ): Operation.SelectCountOperation<D>(entity), GenericSelect {
     override fun generateStatement(): String = "select count(${column?.columnName ?: "*"}) from ${entity.tableName}"
 }
@@ -44,22 +44,22 @@ class SelectWhereOp<D: Any, R>(
 }
 
 class InsertOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) {
-    override fun generateStatement(): String = "insert into ${entity.tableName}(${entity.columns.map(Column<*>::columnName).joinToString(", ")})"
+    override fun generateStatement(): String = "insert into ${entity.tableName}(${entity.columns.map(Column<*, *>::columnName).joinToString(", ")})"
 }
 
 class InsertValuesOp<D: Any>(
     private val insertOp: InsertOp<D>,
     private val data: D
 ): Operation.UpdateOperation<D>(insertOp.entity) {
-    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.values.map { it.get(data) }.joinToString(", ", transform = ::toSafeSQL)})"
+    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.map { it.value.get(data)?.let(it.key.valueConverter::convertFrom) }.joinToString(", ", transform = ::toSafeSQL)})"
 }
 
 class InsertOnConflictOp<D: Any>(
     private val insertOp: InsertValuesOp<D>,
-    private vararg val conflictingColumns: Column<*>,
+    private vararg val conflictingColumns: Column<*, *>,
     private val action: ConflictingUpdateSetOp<D>?
 ): Operation.UpdateOperation<D>(insertOp.entity) {
-    override fun generateStatement(): String = "${insertOp.generateStatement()} on conflict (${conflictingColumns.joinToString(", ", transform = Column<*>::columnName)}) do ${action?.generateStatement() ?: "nothing"}"
+    override fun generateStatement(): String = "${insertOp.generateStatement()} on conflict (${conflictingColumns.joinToString(", ", transform = Column<*, *>::columnName)}) do ${action?.generateStatement() ?: "nothing"}"
 }
 
 class UpdateOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) {
@@ -112,7 +112,7 @@ fun <D: Any> select(entity: Entity<D>) = SelectOp(entity)
 
 fun <D: Any> SelectOp<D>.count() = SelectCountOp(entity, null)
 
-infix fun <D: Any> SelectOp<D>.count(column: Column<*>) = SelectCountOp(entity, column)
+infix fun <D: Any> SelectOp<D>.count(column: Column<*, *>) = SelectCountOp(entity, column)
 
 infix fun <D: Any, R, S> S.where(condition: Expression) where S: GenericSelect, S: Operation<D, R> = SelectWhereOp(this, condition)
 
@@ -120,11 +120,11 @@ fun <D: Any> insert(entity: Entity<D>) = InsertOp(entity)
 
 infix fun <D: Any> InsertOp<D>.values(data: D) = InsertValuesOp(this, data)
 
-fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, *conflictingColumns, action = action)
+fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*, *>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, *conflictingColumns, action = action)
 
-fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*>, action: ConflictContext<D>.() -> ConflictingUpdateSetOp<D>?) = InsertOnConflictOp(this, *conflictingColumns, action = action(ConflictContext(entity)))
+fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*, *>, action: ConflictContext<D>.() -> ConflictingUpdateSetOp<D>?) = InsertOnConflictOp(this, *conflictingColumns, action = action(ConflictContext(entity)))
 
-fun <D: Any> InsertValuesOp<D>.onConflictDoNothing(vararg conflictingColumns: Column<*>) = InsertOnConflictOp(this, *conflictingColumns, action = null)
+fun <D: Any> InsertValuesOp<D>.onConflictDoNothing(vararg conflictingColumns: Column<*, *>) = InsertOnConflictOp(this, *conflictingColumns, action = null)
 
 fun <D: Any> update(entity: Entity<D>) = UpdateOp(entity)
 

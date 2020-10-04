@@ -20,7 +20,7 @@ class ColumnRenderer(
 ) : Renderer<PropertySpec> {
     val name = property.simpleName.toString()
 
-    override fun render(): PropertySpec = PropertySpec.builder(name, Column::class.asTypeName().parameterizedBy(sqlType, outputType))
+    override fun render(): PropertySpec = PropertySpec.builder(name, Column::class.asTypeName().parameterizedBy(outputType, sqlType))
         .initializer(initializer, *members)
         .mutable(false)
         .build()

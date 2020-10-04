@@ -39,7 +39,7 @@ fun getColumnMemberName(typeName: TypeName): MemberName {
         Short::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "short")
         Float::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "real")
         Double::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "float")
-        Array<Byte>::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "binary")
+//        Array<Byte>::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "binary")
         else -> throw Exception("Tried to get an invalid column member name, make sure you are using valid datatypes!")
     }
 }
@@ -104,7 +104,7 @@ class AnnotationProcessor: AbstractProcessor() {
             if(property.kind == ElementKind.FIELD) {
                 val typeArguments = processTypes(property) { metadataProperties.find { it.name == property.simpleName.toString() }!! }
                 val memberNames = mutableListOf<MemberName>()
-                typeArguments[0].let { memberNames.add(getColumnMemberName(it)) }
+                typeArguments[1].let { memberNames.add(getColumnMemberName(it)) }
                 val converter = property.getAnnotationClassValue<ValueConverter> { converter }
                 converter
                     ?.let(types::asElement)
@@ -118,8 +118,8 @@ class AnnotationProcessor: AbstractProcessor() {
                     }
                 entityRenderer.addColumnRenderer(ColumnRenderer(
                     property,
-                    typeArguments[0],
                     typeArguments[1],
+                    typeArguments[0],
                     generateInitializer(property),
                     *memberNames.toTypedArray()
                 ))

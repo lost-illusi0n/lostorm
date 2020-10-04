@@ -51,7 +51,7 @@ class InsertValuesOp<D: Any>(
     private val insertOp: InsertOp<D>,
     private val data: D
 ): Operation.UpdateOperation<D>(insertOp.entity) {
-    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.map { it.value.get(data)?.let(it.key.valueConverter::convertFrom) }.joinToString(", ", transform = ::toSafeSQL)})"
+    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.map { it.value.get(data)?.let(it.key.valueConverter::convertToSql) }.joinToString(", ", transform = ::toSafeSQL)})"
 }
 
 class InsertOnConflictOp<D: Any>(

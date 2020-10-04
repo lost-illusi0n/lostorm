@@ -19,9 +19,7 @@ abstract class Entity<D: Any>(
         val eqs = toEqExpressions(data).toMutableList()
         val first = eqs.removeAt(0)
         var andExp: AndExpression? = null
-        for(eq in eqs) {
-            andExp = if(andExp == null) first and eq else andExp and eq
-        }
+        for(eq in eqs) andExp = if(andExp == null) first and eq else andExp and eq
         return andExp!!
     }
 }

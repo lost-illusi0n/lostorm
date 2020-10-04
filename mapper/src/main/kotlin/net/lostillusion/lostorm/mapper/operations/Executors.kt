@@ -29,7 +29,7 @@ class SelectExectutor<D : Any>(private val entity: Entity<D>) : OperationExecuto
             val currentResult = mutableListOf<Any?>()
             entity.columns.forEach {
                 try {
-                    currentResult += it.valueConverter.convertTo(result.getObject(it.columnName))
+                    currentResult += it.valueConverter.convertToKotlin(result.getObject(it.columnName))
                 } catch (e: SQLException) {
                     if (it.nullable) currentResult.add(null)
                     //TODO: Make this a unique exception

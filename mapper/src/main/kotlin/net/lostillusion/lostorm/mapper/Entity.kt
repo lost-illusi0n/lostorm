@@ -12,7 +12,6 @@ abstract class Entity<D: Any>(
 
     abstract fun createDataClass(values: List<*>): D
 
-    @Suppress("UNCHECKED_CAST")
     fun toEqExpressions(data: D): List<EqExpression<*>> =
         columnsToValues.map { it.key eq it.value.get(data) }
 

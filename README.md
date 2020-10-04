@@ -78,7 +78,6 @@ session {
 - Long (bigint)
 - Float (real)
 - Double (float)
-- ByteArray (bytea)
 - *Create an issue if one is missing.*
 #### Column Customization
 You may want to make certain columns nullable or unique, which is completaly doable with Lostorm.

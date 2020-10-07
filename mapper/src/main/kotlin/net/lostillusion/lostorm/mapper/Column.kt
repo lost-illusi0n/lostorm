@@ -4,8 +4,6 @@ package net.lostillusion.lostorm.mapper
 
 import kotlin.reflect.KClass
 
-//T = Base
-//B = SQL
 /**
  * A class to represent an SQL column with Lostorm additions.
  *

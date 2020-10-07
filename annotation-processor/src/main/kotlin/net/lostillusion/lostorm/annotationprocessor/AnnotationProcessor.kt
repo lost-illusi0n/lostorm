@@ -2,10 +2,7 @@ package net.lostillusion.lostorm.annotationprocessor
 
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.metadata.ImmutableKmProperty
-import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
-import com.squareup.kotlinpoet.metadata.isObject
-import com.squareup.kotlinpoet.metadata.toImmutableKmClass
+import com.squareup.kotlinpoet.metadata.*
 import kotlinx.metadata.KmClassifier
 import net.lostillusion.lostorm.annotations.Columns
 import net.lostillusion.lostorm.annotations.EntityDataClass
@@ -27,11 +24,14 @@ import kotlin.reflect.KClass
 
 
 const val LOSTORM_PACKAGE = "net.lostillusion.lostorm.mapper"
+const val SQL_TYPE = "sqlType"
+const val CUSTOM_TYPE = "customType"
+
 lateinit var types: Types
 lateinit var elements: Elements
 
 fun getColumnMemberName(typeName: TypeName): MemberName {
-    return when(typeName) {
+    return when (typeName) {
         String::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "text")
         Boolean::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "bool")
         Int::class.asTypeName() -> MemberName(LOSTORM_PACKAGE, "int")
@@ -47,7 +47,7 @@ fun getColumnMemberName(typeName: TypeName): MemberName {
 @KotlinPoetMetadataPreview
 @ExperimentalStdlibApi
 @AutoService(Processor::class)
-class AnnotationProcessor: AbstractProcessor() {
+class AnnotationProcessor : AbstractProcessor() {
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
     }
@@ -75,19 +75,20 @@ class AnnotationProcessor: AbstractProcessor() {
         fun extractTableName(): String = element.getAnnotation(EntityDataClass::class.java)!!.tableName.let {
             if (it != "_none") it else "${element.simpleName.toString().toLowerCase()}table"
         }
-        fun generateInitializer(property: Element): String {
-            val columnName = property
-                .getAnnotation(Columns::class.java)
+
+        fun generateInitializer(property: Element, kmProperty: ImmutableKmProperty): String {
+            val columns = property.getAnnotation(Columns::class.java)
+            val columnName = columns
                 ?.columnName
-                ?.let { if(it.isEmpty()) null else it }
+                ?.let { if (it.isEmpty()) null else it }
                 ?: property.simpleName.toString()
             return buildString {
                 append("""%M("$columnName")""")
-                property.getAnnotation(Columns::class.java)
-                    ?.let(ColumnProperty.Companion::fromColumns)
+                columns
+                    ?.let { ColumnProperty.fromColumn(columns, kmProperty) }
                     ?.map(ColumnProperty::initializer)
                     ?.forEach { append(it) }
-                if(property.getAnnotation(ValueConverter::class.java) != null) append(".converter(%M)")
+                if (property.getAnnotation(ValueConverter::class.java) != null) append(".converter(%M)")
             }
         }
 
@@ -101,12 +102,14 @@ class AnnotationProcessor: AbstractProcessor() {
         val metadataProperties = (element as TypeElement).toImmutableKmClass().properties
 
         for (property in element.enclosedElements) {
-            if(property.kind == ElementKind.FIELD) {
-                val typeArguments = processTypes(property) { metadataProperties.find { it.name == property.simpleName.toString() }!! }
+            if (property.kind == ElementKind.FIELD) {
+                val kmProperty = metadataProperties.find { it.name == property.simpleName.toString() }!!
                 val memberNames = mutableListOf<MemberName>()
-                typeArguments[1].let { memberNames.add(getColumnMemberName(it)) }
-                val converter = property.getAnnotationClassValue<ValueConverter> { converter }
-                converter
+
+                val typeArguments = processTypes(property, kmProperty)
+                typeArguments.getValue(SQL_TYPE).let { memberNames.add(getColumnMemberName(it)) }
+
+                property.getAnnotationClassValue<ValueConverter> { converter }
                     ?.let(types::asElement)
                     ?.let {
                         memberNames.add(
@@ -116,13 +119,15 @@ class AnnotationProcessor: AbstractProcessor() {
                             )
                         )
                     }
-                entityRenderer.addColumnRenderer(ColumnRenderer(
-                    property,
-                    typeArguments[1],
-                    typeArguments[0],
-                    generateInitializer(property),
-                    *memberNames.toTypedArray()
-                ))
+                entityRenderer.addColumnRenderer(
+                    ColumnRenderer(
+                        property,
+                        typeArguments.getValue(SQL_TYPE),
+                        typeArguments.getValue(CUSTOM_TYPE),
+                        generateInitializer(property, kmProperty),
+                        *memberNames.toTypedArray()
+                    )
+                )
             }
         }
 
@@ -134,43 +139,67 @@ class AnnotationProcessor: AbstractProcessor() {
 sealed class ColumnProperty {
     abstract val initializer: String
 
-    object UniqueProperty: ColumnProperty() {
+    object UniqueProperty : ColumnProperty() {
         override val initializer = ".unique()"
     }
-    object PrimaryProperty: ColumnProperty() {
+
+    object PrimaryProperty : ColumnProperty() {
         override val initializer = ".primary()"
     }
-    object NullableProperty: ColumnProperty() {
+
+    object NullableProperty : ColumnProperty() {
         override val initializer = ".nullable()"
     }
 
+    @KotlinPoetMetadataPreview
+    class DefaultValueProperty(private val defaultValue: String, private val kmProperty: ImmutableKmProperty) :
+        ColumnProperty() {
+        override val initializer: String
+            get() {
+                val defaultValueArg = when (sanitizedClassNameBestGuess(kmProperty.returnType)) {
+                    String::class.asClassName() -> "'$defaultValue"
+                    else -> defaultValue
+                }
+                return ".defaultValue($defaultValueArg)"
+            }
+    }
+
     companion object {
+        @KotlinPoetMetadataPreview
         @ExperimentalStdlibApi
-        fun fromColumns(columns: Columns) = buildList {
-            if(columns.unique) add(UniqueProperty)
-            if(columns.primaryKey) add(PrimaryProperty)
-            if(columns.nullable) add(NullableProperty)
-        }
+        fun fromColumn(columns: Columns, kmProperty: ImmutableKmProperty) =
+            buildList {
+                if (columns.unique) add(UniqueProperty)
+                if (columns.primaryKey) add(PrimaryProperty)
+                if (columns.nullable) add(NullableProperty)
+                if (columns.defaultValue != "¯\\_(ツ)_/¯") add(DefaultValueProperty(columns.defaultValue, kmProperty))
+            }
     }
 }
 
-class ConverterNotAnObjectException(converter: TypeElement) : Exception("Converter ${converter.simpleName} is not an object and thus cannot be used!")
+class ConverterNotAnObjectException(converter: TypeElement) :
+    Exception("Converter ${converter.simpleName} is not an object and thus cannot be used!")
 
+@ExperimentalStdlibApi
 @KotlinPoetMetadataPreview
-private fun processTypes(actual: Element, kmRetriever: () -> ImmutableKmProperty): List<ClassName> {
-    return if(actual.getAnnotation(ValueConverter::class.java) != null) {
+private fun processTypes(actual: Element, kmProperty: ImmutableKmProperty): Map<String, ClassName> {
+    return if (actual.getAnnotation(ValueConverter::class.java) != null) {
         val converter = types.asElement(actual.getAnnotationClassValue<ValueConverter> { converter }) as TypeElement
         val converterKm = converter.toImmutableKmClass()
-        if(!converterKm.isObject) throw ConverterNotAnObjectException(converter)
-        val superConverter = converterKm.supertypes.find { (it.classifier as KmClassifier.Class).name == "net/lostillusion/lostorm/mapper/Converter" }!!
-        superConverter.arguments
+        if (!converterKm.isObject) throw ConverterNotAnObjectException(converter)
+        val superConverter =
+            converterKm.supertypes.find { (it.classifier as KmClassifier.Class).name == "net/lostillusion/lostorm/mapper/Converter" }!!
+        val typeArgs = superConverter.arguments
             .map { it.type!!.classifier as KmClassifier.Class }
             .map { it.name.replace("/", ".") }
-            .map(ClassName.Companion::bestGuess)
+
+        buildMap {
+            put(CUSTOM_TYPE, ClassName.bestGuess(typeArgs[0]))
+            put(SQL_TYPE, ClassName.bestGuess(typeArgs[1]))
+        }
     } else {
-        val propertyKm = kmRetriever().returnType
-        val type = ClassName.bestGuess((propertyKm.classifier as KmClassifier.Class).name.replace("/", "."))
-        List(2) { type }
+        val type = sanitizedClassNameBestGuess(kmProperty.returnType)
+        mapOf(Pair(CUSTOM_TYPE, type), Pair(SQL_TYPE, type))
     }
 }
 
@@ -183,3 +212,7 @@ private inline fun <reified T : Annotation> Element.getAnnotationClassValue(cros
         e.typeMirror
     }
 }
+
+@KotlinPoetMetadataPreview
+private fun sanitizedClassNameBestGuess(type: ImmutableKmType) =
+    ClassName.bestGuess((type.classifier as KmClassifier.Class).name.replace("/", "."))

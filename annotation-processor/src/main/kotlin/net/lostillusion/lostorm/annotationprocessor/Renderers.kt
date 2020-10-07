@@ -14,16 +14,17 @@ interface Renderer<T> {
 class ColumnRenderer(
     property: Element,
     private val sqlType: TypeName,
-    private val outputType: TypeName,
+    private val customType: TypeName,
     private val initializer: String,
     private vararg val members: MemberName
 ) : Renderer<PropertySpec> {
     val name = property.simpleName.toString()
 
-    override fun render(): PropertySpec = PropertySpec.builder(name, Column::class.asTypeName().parameterizedBy(outputType, sqlType))
-        .initializer(initializer, *members)
-        .mutable(false)
-        .build()
+    override fun render(): PropertySpec =
+        PropertySpec.builder(name, Column::class.asTypeName().parameterizedBy(customType, sqlType))
+            .initializer(initializer, *members)
+            .mutable(false)
+            .build()
 }
 
 class EntityRenderer(
@@ -34,7 +35,9 @@ class EntityRenderer(
 ) : Renderer<FileSpec> {
     private val columns = mutableListOf<ColumnRenderer>()
 
-    fun addColumnRenderer(columnRenderer: ColumnRenderer) { columns.add(columnRenderer) }
+    fun addColumnRenderer(columnRenderer: ColumnRenderer) {
+        columns.add(columnRenderer)
+    }
 
     override fun render(): FileSpec {
         val file = FileSpec.builder(packageName, entityName)
@@ -49,7 +52,7 @@ class EntityRenderer(
         val columnsInitializer = mutableListOf<String>()
         val columnsToValuesInitializer = mutableListOf<String>()
 
-        for(columnRenderer in columns) {
+        for (columnRenderer in columns) {
             columnsInitializer.add(columnRenderer.name)
             columnsToValuesInitializer.add("${columnRenderer.name} to ${dataType.simpleName}::${columnRenderer.name}")
             entity.addProperty(columnRenderer.render())
@@ -74,12 +77,17 @@ class EntityRenderer(
         .build()
 
     private fun generateColumnsToValuesMap() = PropertySpec
-        .builder("columnsToValues", Map::class.asTypeName().parameterizedBy(
-            Column::class.parameterizedBy(Any::class, Any::class),
-            KProperty1::class.asTypeName().parameterizedBy(dataType, STAR)
-        )).addModifiers(KModifier.OVERRIDE)
+        .builder(
+            "columnsToValues",
+            Map::class.asTypeName().parameterizedBy(
+                Column::class.parameterizedBy(Any::class, Any::class),
+                KProperty1::class.asTypeName().parameterizedBy(dataType, STAR)
+            )
+        ).addModifiers(KModifier.OVERRIDE)
 
     private fun generateColumnsList() = PropertySpec
-        .builder("columns", List::class.asTypeName().parameterizedBy(Column::class.parameterizedBy(Any::class, Any::class)))
-        .addModifiers(KModifier.OVERRIDE)
+        .builder(
+            "columns",
+            List::class.asTypeName().parameterizedBy(Column::class.parameterizedBy(Any::class, Any::class))
+        ).addModifiers(KModifier.OVERRIDE)
 }

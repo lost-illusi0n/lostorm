@@ -6,5 +6,6 @@ annotation class Columns(
     val columnName: String = "",
     val primaryKey: Boolean = false,
     val nullable: Boolean = false,
-    val unique: Boolean = false
+    val unique: Boolean = false,
+    val defaultValue: String = "¯\\_(ツ)_/¯"
 )

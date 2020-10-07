@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package net.lostillusion.lostorm.mapper
 
 import kotlin.reflect.KClass
@@ -8,14 +10,14 @@ class Column<T: Any, B: Any>(
     val columnName: String,
     val isPrimary: Boolean = false,
     val hasDefaultValue: Boolean = false,
-    val defaultValue: B? = null,
+    val defaultValue: String? = null,
     val nullable: Boolean = false,
     val unique: Boolean = false,
     val valueConverter: Converter<T, B>,
     val valueClass: KClass<out Any>
 ) {
     fun primary() = Column(columnName, true, hasDefaultValue, defaultValue, nullable, unique, valueConverter, valueClass)
-    fun defaultValue(value: B) = Column(columnName, isPrimary, true, value, nullable, unique, valueConverter, valueClass)
+    fun defaultValue(value: String?) = Column(columnName, isPrimary, true, value, nullable, unique, valueConverter, valueClass)
     fun nullable() = Column(columnName, isPrimary, hasDefaultValue, defaultValue, true, unique, valueConverter, valueClass)
     fun unique() = Column(columnName, isPrimary, hasDefaultValue, defaultValue, nullable, true, valueConverter, valueClass)
     fun <T1: Any> converter(converter: Converter<T1, B>) = Column(columnName, isPrimary, hasDefaultValue, defaultValue, nullable, unique, converter, valueClass)

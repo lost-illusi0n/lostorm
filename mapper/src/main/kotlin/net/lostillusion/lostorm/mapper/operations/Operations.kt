@@ -1,9 +1,6 @@
-@file:Suppress("MemberVisibilityCanBePrivate")
-
 package net.lostillusion.lostorm.mapper.operations
 
 import net.lostillusion.lostorm.mapper.*
-import net.lostillusion.lostorm.mapper.toSafeSQL
 
 interface StatementGenerator {
     fun generateStatement(): String
@@ -49,9 +46,9 @@ class InsertOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) 
 
 class InsertValuesOp<D: Any>(
     private val insertOp: InsertOp<D>,
-    private val data: D
+    private vararg val inserts: EqExpression<*>
 ): Operation.UpdateOperation<D>(insertOp.entity) {
-    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columnsToValues.map { it.value.get(data)?.let(it.key.valueConverter::convertToSql) }.joinToString(", ", transform = ::toSafeSQL)})"
+    override fun generateStatement(): String = "${insertOp.generateStatement()} values(${entity.columns.joinToString(", ") { toSafeSQL(inserts.mapNotNull { ins -> if(ins.column == it) it.valueConverter.orConvertToSql(ins.value) else null }.firstOrNull()) }})"
 }
 
 class InsertOnConflictOp<D: Any>(
@@ -118,7 +115,9 @@ infix fun <D: Any, R, S> S.where(condition: Expression) where S: GenericSelect, 
 
 fun <D: Any> insert(entity: Entity<D>) = InsertOp(entity)
 
-infix fun <D: Any> InsertOp<D>.values(data: D) = InsertValuesOp(this, data)
+infix fun <D: Any> InsertOp<D>.values(data: D) = InsertValuesOp(this, *entity.toEqExpressions(data).toTypedArray())
+
+fun <D: Any> InsertOp<D>.values(vararg inserts: EqExpression<*>) = InsertValuesOp(this, *inserts)
 
 fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*, *>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, *conflictingColumns, action = action)
 

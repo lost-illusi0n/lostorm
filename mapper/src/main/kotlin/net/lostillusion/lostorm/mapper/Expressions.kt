@@ -5,15 +5,15 @@ interface Expression {
 }
 
 class EqExpression<V: Any>(
-    private val column: Column<V, *>,
-    private val value: V?
+    internal val column: Column<V, *>,
+    internal val value: V?
 ): Expression {
     override fun generateExpression() = "${column.columnName} = ${toSafeSQL(column.valueConverter.orConvertToSql(value))}"
 }
 
 class NeqExpression<V: Any>(
-    private val column: Column<V, *>,
-    private val value: V?
+    internal val column: Column<V, *>,
+    internal val value: V?
 ): Expression {
     override fun generateExpression(): String = "${column.columnName} != ${toSafeSQL(column.valueConverter.orConvertToSql(value))}"
 }

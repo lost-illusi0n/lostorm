@@ -14,7 +14,7 @@ object SchemaUtils {
                         | (${
                     it.columns.joinToString(", ") {
                         """${it.columnName}
-                                        | ${DataTypes.kotlinToSQL[it.valueClass]}
+                                        | ${DataTypes.kotlinToSQL[it.sqlClass]}
                                         |${if (it.nullable) "" else " not null"}
                                         |${if (it.hasDefaultValue) " default ${it.defaultValue}" else ""}
                                     """.trimMargin()

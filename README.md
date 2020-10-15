@@ -17,9 +17,9 @@ repositories {
     }
 }
 dependencies {
-    kapt 'net.lostillusion.lostorm:annotation-processor:1.2.2'
-    implementation 'net.lostillusion.lostorm:annotations:1.2.2'
-    implementation 'net.lostillusion.lostorm:mapper:1.2.2'
+    kapt 'net.lostillusion.lostorm:annotation-processor:1.3.0'
+    implementation 'net.lostillusion.lostorm:annotations:1.3.0'
+    implementation 'net.lostillusion.lostorm:mapper:1.3.0'
 }
 ```
 ##### Maven

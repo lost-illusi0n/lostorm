@@ -1,9 +1,12 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.3.72'
-    id 'org.jetbrains.kotlin.kapt' version '1.3.72'
+    id 'org.jetbrains.kotlin.kapt'
 }
 
 group 'net.lostillusion.lostorm'
+
+ext {
+    kotlin_poet = '1.6.0'
+}
 
 repositories {
     mavenCentral()
@@ -11,11 +14,16 @@ repositories {
 
 dependencies {
     kapt 'com.google.auto.service:auto-service:1.0-rc4'
-    implementation "com.google.auto.service:auto-service:1.0-rc4"
-    implementation project(':annotations')
+    implementation 'com.google.auto.service:auto-service:1.0-rc4'
+    implementation "com.squareup:kotlinpoet:$kotlin_poet"
+    implementation "com.squareup:kotlinpoet-metadata:$kotlin_poet"
+    implementation "com.squareup:kotlinpoet-metadata-specs:$kotlin_poet"
+    implementation "com.squareup:kotlinpoet-classinspector-elements:$kotlin_poet"
     implementation project(':mapper')
-    implementation 'com.squareup:kotlinpoet:1.6.0'
+    implementation project(':annotations')
+    implementation 'io.github.microutils:kotlin-logging:1.12.0'
+    implementation 'org.slf4j:slf4j-simple:1.7.30'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
-    compile 'io.github.microutils:kotlin-logging:1.12.0'
-    compile 'org.slf4j:slf4j-simple:1.7.30'
+    implementation 'io.github.microutils:kotlin-logging:1.12.0'
+    implementation 'org.slf4j:slf4j-simple:1.7.30'
 }

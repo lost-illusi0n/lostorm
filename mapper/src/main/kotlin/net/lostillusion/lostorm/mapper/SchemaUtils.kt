@@ -12,14 +12,14 @@ object SchemaUtils {
                 val sql =
                     """create table if not exists ${it.tableName}
                         | (${
-                            it.columns.joinToString(", ") {
-                                """${it.columnName}
-                                        | ${DataTypes.kotlinToSQL[it.valueClass]}
+                    it.columns.joinToString(", ") {
+                        """${it.columnName}
+                                        | ${DataTypes.kotlinToSQL[it.sqlClass]}
                                         |${if (it.nullable) "" else " not null"}
-                                        |${if (it.hasDefaultValue) " default ${toSafeSQL(it.defaultValue)}" else ""}
+                                        |${if (it.hasDefaultValue) " default ${it.defaultValue}" else ""}
                                     """.trimMargin()
-                            }
-                        }
+                    }
+                    }
                         |${if (it.primaryKey.asSQL.isNotEmpty()) ", ${it.primaryKey.asSQL}" else ""})
                     """.trimMargin()
                 LOGGER.debug { "Executing call: $sql" }

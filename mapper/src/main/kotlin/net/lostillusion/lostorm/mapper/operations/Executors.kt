@@ -8,11 +8,11 @@ import java.sql.SQLException
 private val LOGGER = KotlinLogging.logger {}
 
 interface OperationExecutor<R> {
-    fun execute(generator: StatementGenerator, connection: Connection): R
+    fun execute(generator: Statement, connection: Connection): R
 }
 
 object SelectCountExecutor : OperationExecutor<Int> {
-    override fun execute(generator: StatementGenerator, connection: Connection): Int {
+    override fun execute(generator: Statement, connection: Connection): Int {
         LOGGER.debug { "Executing query: ${generator.generateStatement()}" }
         val result = connection.prepareStatement(generator.generateStatement()).executeQuery()
         result.next()
@@ -21,7 +21,7 @@ object SelectCountExecutor : OperationExecutor<Int> {
 }
 
 class SelectExectutor<D : Any>(private val entity: Entity<D>) : OperationExecutor<List<D>> {
-    override fun execute(generator: StatementGenerator, connection: Connection): List<D> {
+    override fun execute(generator: Statement, connection: Connection): List<D> {
         LOGGER.debug { "Executing query: ${generator.generateStatement()}" }
         val result = connection.prepareStatement(generator.generateStatement()).executeQuery()
         val values = mutableListOf<MutableList<Any?>>()
@@ -29,7 +29,7 @@ class SelectExectutor<D : Any>(private val entity: Entity<D>) : OperationExecuto
             val currentResult = mutableListOf<Any?>()
             entity.columns.forEach {
                 try {
-                    currentResult += result.getObject(it.columnName)
+                    currentResult += it.valueConverter.convertToKotlin(result.getObject(it.columnName))
                 } catch (e: SQLException) {
                     if (it.nullable) currentResult.add(null)
                     //TODO: Make this a unique exception
@@ -43,7 +43,7 @@ class SelectExectutor<D : Any>(private val entity: Entity<D>) : OperationExecuto
 }
 
 object UpdateExectuor : OperationExecutor<Int> {
-    override fun execute(generator: StatementGenerator, connection: Connection): Int {
+    override fun execute(generator: Statement, connection: Connection): Int {
         LOGGER.debug { "Executing update: ${generator.generateStatement()}" }
         return connection.prepareStatement(generator.generateStatement()).executeUpdate()
     }

@@ -16,7 +16,7 @@ object SchemaUtils {
                         """${it.columnName}
                                         | ${DataTypes.kotlinToSQL[it.valueClass]}
                                         |${if (it.nullable) "" else " not null"}
-                                        |${if (it.hasDefaultValue) " default ${toSafeSQL(it.defaultValue)}" else ""}
+                                        |${if (it.hasDefaultValue) " default ${it.defaultValue}" else ""}
                                     """.trimMargin()
                     }
                     }

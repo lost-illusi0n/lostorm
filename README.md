@@ -10,9 +10,9 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    kapt 'com.github.lost-illusi0n.lostorm:annotation-processor:1.3.1'
-    implementation 'com.github.lost-illusi0n.lostorm:mapper:1.3.1'
-    implementation 'com.github.lost-illusi0n.lostorm:annotations:1.3.1'
+    kapt 'com.github.lost-illusi0n.lostorm:annotation-processor:1.3.2'
+    implementation 'com.github.lost-illusi0n.lostorm:mapper:1.3.2'
+    implementation 'com.github.lost-illusi0n.lostorm:annotations:1.3.2'
 }
 ```
 ##### Maven

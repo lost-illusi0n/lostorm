@@ -8,6 +8,9 @@ import net.lostillusion.lostorm.annotations.Columns
 import net.lostillusion.lostorm.annotations.EntityDataClass
 import net.lostillusion.lostorm.annotations.ValueConverter
 import java.io.File
+import java.sql.Date
+import java.sql.Time
+import java.sql.Timestamp
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.Processor
@@ -39,6 +42,9 @@ fun getColumnMemberName(typeName: TypeName): MemberName {
         Short::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "short")
         Float::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "real")
         Double::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "float")
+        Date::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "date")
+        Time::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "time")
+        Timestamp::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "timestamp")
 //        Array<Byte>::class.asClassName() -> MemberName(LOSTORM_PACKAGE, "binary")
         else -> throw Exception("Tried to get an invalid column member name, make sure you are using valid datatypes!")
     }
@@ -157,7 +163,10 @@ sealed class ColumnProperty {
         override val initializer: String
             get() {
                 val defaultValueArg = when (sanitizedClassNameBestGuess(kmProperty.returnType)) {
-                    String::class.asClassName() -> "'$defaultValue"
+                    String::class.asClassName() -> "'$defaultValue'"
+                    Date::class.asClassName() -> "'$defaultValue'"
+                    Time::class.asClassName() -> "'$defaultValue'"
+                    Timestamp::class.asClassName() -> "'$defaultValue'"
                     else -> defaultValue
                 }
                 return ".defaultValue($defaultValueArg)"

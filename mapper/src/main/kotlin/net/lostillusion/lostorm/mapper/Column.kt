@@ -2,6 +2,9 @@
 
 package net.lostillusion.lostorm.mapper
 
+import java.sql.Date
+import java.sql.Time
+import java.sql.Timestamp
 import kotlin.reflect.KClass
 
 /**
@@ -112,6 +115,27 @@ fun real(columnName: String) = Column<Float, Float>(columnName, valueConverter =
 fun float(columnName: String) = Column<Double, Double>(columnName, valueConverter = DefaultConverter(), sqlClass = Double::class)
 
 /**
+ * Creates a new [Date] [Column].
+ * @param columnName The name of the [Column].
+ * @return The new [Column].
+ */
+fun date(columnName: String) = Column<Date, Date>(columnName, valueConverter = DefaultConverter(), sqlClass = Date::class)
+
+/**
+ * Creates a new [Time] [Column].
+ * @param columnName The name of the [Column].
+ * @return The new [Column].
+ */
+fun time(columnName: String) = Column<Time, Time>(columnName, valueConverter = DefaultConverter(), sqlClass = Time::class)
+
+/**
+ * Creates a new [Timestamp] [Column].
+ * @param columnName The name of the [Column]/
+ * @return The new [Column]/
+ */
+fun timestamp(columnName: String) = Column<Timestamp, Timestamp>(columnName, valueConverter = DefaultConverter(), sqlClass= Timestamp::class)
+
+/**
  * Creates a new [Boolean] [Column] but with a custom [Converter]
  * @param columnName The name of the [Column].
  * @param converter The custom [Converter].
@@ -173,3 +197,28 @@ fun <C: Any> real(columnName: String, converter: Converter<Float, C>) = Column(c
  * @param converter The custom [Converter].
  * @return The new [Column].
  */
+fun <C: Any> float(columnName: String, converter: Converter<Double, C>) = Column(columnName, valueConverter = converter, sqlClass = Double::class)
+
+/**
+ * Creates a new [Date] [Column] but with a custom [Converter]
+ * @param columnName The name of the [Column].
+ * @param converter The custom [Converter].
+ * @return The new [Column].
+ */
+fun <C: Any> date(columnName: String, converter: Converter<Date, C>) = Column(columnName, valueConverter = converter, sqlClass = Date::class)
+
+/**
+ * Creates a new [Time] [Column] but with a custom [Converter]
+ * @param columnName the name of the [Column].
+ * @param converter the custom [Converter].
+ * @return the new [Converter].
+ */
+fun <C: Any> time(columnName: String, converter: Converter<Time, C>) = Column(columnName, valueConverter = converter, sqlClass = Time::class)
+
+/**
+ * Creates a new [Timestamp] [Column] but with a custom [Converter]
+ * @param columnName the name of the [Column].
+ * @param converter the custom [Converter].
+ * @return the new [Converter].
+ */
+fun <C: Any> timestamp(columnName: String, converter: Converter<Timestamp, C>) = Column(columnName, valueConverter = converter, sqlClass = Timestamp::class)

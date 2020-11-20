@@ -59,7 +59,7 @@ class EntityRenderer(
         }
 
         columnsBuilder.initializer("listOf(${columnsInitializer.joinToString(", ")}) as List<Column<Any, Any>>")
-        columnsToValuesBuilder.initializer("mapOf(\n${columnsToValuesInitializer.joinToString(", \n")}\n) as Map<Column<Any, Any>, KProperty1<Human, *>>")
+        columnsToValuesBuilder.initializer("mapOf(\n${columnsToValuesInitializer.joinToString(", \n")}\n) as Map<Column<Any, Any>, KProperty1<%T, *>>", dataType)
 
         entity.addFunction(generateCreateDataClass())
         entity.addProperty(columnsBuilder.build())

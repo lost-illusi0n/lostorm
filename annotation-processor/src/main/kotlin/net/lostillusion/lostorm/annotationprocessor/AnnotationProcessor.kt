@@ -180,7 +180,7 @@ sealed class ColumnProperty {
             buildList {
                 if (columns.unique) add(UniqueProperty)
                 if (columns.primaryKey) add(PrimaryProperty)
-                if (columns.nullable) add(NullableProperty)
+                if (kmProperty.returnType.isNullable) add(NullableProperty)
                 if (columns.defaultValue != "¯\\_(ツ)_/¯") add(DefaultValueProperty(columns.defaultValue, kmProperty))
             }
     }

@@ -2,6 +2,7 @@ package net.lostillusion.lostorm.mapper.operations
 
 import mu.KotlinLogging
 import net.lostillusion.lostorm.mapper.Entity
+import net.lostillusion.lostorm.mapper.orConvertToKotlin
 import java.sql.Connection
 import java.sql.SQLException
 
@@ -29,11 +30,11 @@ class SelectExectutor<D : Any>(private val entity: Entity<D>) : OperationExecuto
             val currentResult = mutableListOf<Any?>()
             entity.columns.forEach {
                 try {
-                    currentResult += it.valueConverter.convertToKotlin(result.getObject(it.columnName))
+                    val value = result.getObject(it.columnName)
+                    if(value == null && !it.nullable) throw RuntimeException("Column ${it.columnName} is marked as non-null but found a null value.")
+                    currentResult += it.valueConverter.orConvertToKotlin(value)
                 } catch (e: SQLException) {
-                    if (it.nullable) currentResult.add(null)
-                    //TODO: Make this a unique exception
-                    else throw RuntimeException("No value found for non-nullable column: ${it.columnName}")
+                    throw LostormException(e)
                 }
             }
             values += currentResult
@@ -48,3 +49,5 @@ object UpdateExectuor : OperationExecutor<Int> {
         return connection.prepareStatement(generator.generateStatement()).executeUpdate()
     }
 }
+
+class LostormException(cause: SQLException): RuntimeException(cause)

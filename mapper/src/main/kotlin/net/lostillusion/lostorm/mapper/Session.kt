@@ -13,7 +13,7 @@ import java.sql.DriverManager
  * @param driver The PostgreSQL driver (should usually not be changed).
  * @constructor Creates a session to the specified [host].
  */
-class Session(private val host: String, private val user: String, private val pass: String, driver: String = "org.postgresql.Driver") {
+class Session(private val host: String, private val user: String, private val pass: String?, driver: String = "org.postgresql.Driver") {
     init {
         Class.forName(driver)
     }

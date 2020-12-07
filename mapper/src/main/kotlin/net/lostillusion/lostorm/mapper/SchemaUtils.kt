@@ -11,9 +11,10 @@ object SchemaUtils {
                 val sql = "create table if not exists ${entity.tableName} (" +
                     //add column information
                     entity.columns.joinToString(", ") { column ->
-                        "${column.columnName} ${DataTypes.kotlinToSQL[column.sqlClass]}" +              //column_name column_type
+                        ("${column.columnName} ${DataTypes.kotlinToSQL[column.sqlClass]}" +              //column_name column_type
                             (if(!column.nullable) " not null " else "") +                               //not null
                             (if(column.hasDefaultValue) " default ${column.defaultValue} " else "")     //default value
+                                ).trim()
                     } +
                     //primary key information
                     (if(entity.primaryKey.asSQL.isNotEmpty()) ", ${entity.primaryKey.asSQL}" else "") + //primary keys

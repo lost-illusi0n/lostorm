@@ -18,7 +18,7 @@ interface Statement {
  * Base for all supported [Operation]s
  *
  * @param entity The [Entity] that the operation will be executed against.
- * @param executor The [OperationExecutor] which will executue the operation.
+ * @param executor The [OperationExecutor] which will execute the operation.
  */
 sealed class Operation<D: Any, R>(
     val entity: Entity<D>,
@@ -92,6 +92,44 @@ class SelectWhereOp<D: Any, R>(
 }
 
 /**
+ * An SQL ``select limit`` statement equivalent.
+ *
+ * @param selectOp the original Select statement which the Where statement will be added onto.
+ * @param limit the limit condition.
+ */
+class SelectLimitOp<D: Any, R>(
+    private val selectOp: Operation<D, R>,
+    private val limit: Int
+): Operation<D, R>(selectOp.entity, selectOp.executor) {
+    override fun generateStatement(): String = "${selectOp.generateStatement()} limit $limit"
+}
+
+/**
+ * An SQL ``select offset`` statement equivalent.
+ * @param selectOp the original Select operation which the offset clause will be added onto.
+ * @param offset the offset condition.
+ */
+class SelectOffsetOp<D: Any, R>(
+    private val selectOp: Operation<D, R>,
+    private val offset: Int
+): Operation<D, R>(selectOp.entity, selectOp.executor) {
+    override fun generateStatement(): String = "${selectOp.generateStatement()} offset $offset"
+}
+
+/**
+ * An SQL ``select order by`` clause equivalent.
+ *
+ * @param selectOp The original [SelectOp] which the order by clause will be added onto.
+ * @param expressions the sort expressions.
+ */
+class SelectOrderByOp<D: Any, R>(
+    private val selectOp: Operation<D, R>,
+    private vararg val expressions: OrderByExpression
+): Operation<D, R>(selectOp.entity, selectOp.executor) {
+    override fun generateStatement(): String = "${selectOp.generateStatement()} order by ${expressions.joinToString(", ") { it.generateExpression() }}"
+}
+
+/**
  * An SQL ``insert into`` statement equivalent.
  *
  * @param entity the Table this operation will target.
@@ -137,7 +175,6 @@ class UpdateOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<D>(entity) 
     override fun generateStatement(): String = "update ${entity.tableName}"
 }
 
-
 /**
  * An SQL ``update set`` statement equivalent.
  *
@@ -177,7 +214,7 @@ class ConflictingUpdateOp<D: Any>(entity: Entity<D>): Operation.UpdateOperation<
 /**
  * Represents the Update Set part of ``conflict_action`` SQL statements.
  *
- * @param conflictingUpdateOp The original [ConflictingUpdateOp] which the Set statement will be appened onto.
+ * @param conflictingUpdateOp The original [ConflictingUpdateOp] which the Set statement will be appended onto.
  * @param eqs The [EqExpression]s which represent the values of the Set statement.
  */
 class ConflictingUpdateSetOp<D: Any>(
@@ -245,6 +282,69 @@ fun <D: Any> SelectOp<D>.count() = SelectCountOp(entity, null)
 infix fun <D: Any> SelectOp<D>.count(column: Column<*, *>) = SelectCountOp(entity, column)
 
 /**
+ * Creates a [SelectLimitOp] query.
+ * This will return the query limited by the [limit].
+ *
+ * @param limit the limit part of this query.
+ * @return the [SelectLimitOp].
+ */
+infix fun <D: Any> SelectOp<D>.limit(limit: Int) = SelectLimitOp(this, limit)
+
+/**
+ * Creates a [SelectLimitOp] query.
+ * This will return the query limited by the [limit].
+ *
+ * @param limit the limit part of this query.
+ * @return the [SelectLimitOp].
+ */
+infix fun <D: Any, R> SelectWhereOp<D, R>.limit(limit: Int) = SelectLimitOp(this, limit)
+
+/**
+ * Creates a [SelectLimitOp] query.
+ * This will return the query limited to the [limit].
+ *
+ * @param limit the limit part of this query.
+ * @return the [SelectLimitOp].
+ */
+infix fun <D: Any, R> SelectOrderByOp<D, R>.limit(limit: Int) = SelectLimitOp(this, limit)
+
+/**
+ * Creates a [SelectOffsetOp] query.
+ * This will return the query offset by the [offset].
+ *
+ * @param offset the offset parameter.
+ * @return the [SelectOffsetOp].
+ */
+infix fun <D: Any, R> Operation<D, R>.offset(offset: Int) = SelectOffsetOp(this, offset)
+
+/**
+ * Adds an order by clause to this statement.
+ * This will return the query ordered by the [orderByExpressions].
+ *
+ * @param orderByExpressions the order by expressions.
+ * @return the [SelectOrderByOp].
+ */
+fun <D: Any> SelectOp<D>.orderBy(vararg orderByExpressions: OrderByExpression) = SelectOrderByOp(this, *orderByExpressions)
+
+/**
+ * Adds an order by clause to this statement.
+ * This will return the query ordered by the [orderByExpressions].
+ *
+ * @param orderByExpressions the order by expressions.
+ * @return the [SelectOrderByOp].
+ */
+fun <D: Any, R> SelectWhereOp<D, R>.orderBy(vararg orderByExpressions: OrderByExpression) = SelectOrderByOp(this, *orderByExpressions)
+
+/**
+ * Adds an order by clause to this statement.
+ * This will return the query ordered by the [orderByExpressions].
+ *
+ * @param orderByExpressions the order by expressions.
+ * @return the [SelectOrderByOp].
+ */
+fun <D: Any, R> SelectLimitOp<D, R>.orderBy(vararg orderByExpressions: OrderByExpression) = SelectOrderByOp(this, *orderByExpressions)
+
+/**
  * Creates a [SelectWhereOp] query.
  * This will specify the Where condition.
  *
@@ -252,6 +352,24 @@ infix fun <D: Any> SelectOp<D>.count(column: Column<*, *>) = SelectCountOp(entit
  * @return the [SelectWhereOp].
  */
 infix fun <D: Any, R, S> S.where(condition: Expression) where S: GenericSelect, S: Operation<D, R> = SelectWhereOp(this, condition)
+
+/**
+ * Creates a [SelectWhereOp] query.
+ * This will specify the Where condition.
+ *
+ * @param condition the Where condition of this query.
+ * @return the [SelectWhereOp].
+ */
+infix fun <D: Any, R> SelectLimitOp<D, R>.where(condition: Expression) = SelectWhereOp(this, condition)
+
+/**
+ * Creates a [SelectWhereOp] query.
+ * This will specify the Where condition.
+ *
+ * @param condition the Where condition of this query.
+ * @return the [SelectWhereOp].
+ */
+infix fun <D: Any, R> SelectOrderByOp<D, R>.where(condition: Expression) = SelectWhereOp(this, condition)
 
 /**
  * Creates a [InsertOp] update.
@@ -287,7 +405,7 @@ fun <D: Any> InsertOp<D>.values(vararg inserts: EqExpression<*>) = InsertValuesO
  * @param action the [ConflictingUpdateSetOp] to be apart of ``conflict_action``.
  * @return the [InsertOnConflictOp].
  */
-fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*, *>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, *conflictingColumns, action = action)
+fun <D: Any> InsertValuesOp<D>.onConflictDoUpdate(vararg conflictingColumns: Column<*, *>, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, *conflictingColumns, action = action)
 
 /**
  * Creates a [InsertOnConflictOp].
@@ -298,6 +416,35 @@ fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*, *
  * @return the [InsertOnConflictOp].
  */
 fun <D: Any> InsertValuesOp<D>.onConflict(vararg conflictingColumns: Column<*, *>, action: ConflictContext<D>.() -> ConflictingUpdateSetOp<D>?) = InsertOnConflictOp(this, *conflictingColumns, action = action(ConflictContext(entity)))
+
+/**
+ * Creates a [InsertOnConflictOp].
+ * This will start an ``on conflict`` clause.
+ *
+ * @param primaryKey the ``conflict_target``.
+ * @param action the ``conflict_action``.
+ * @return the [InsertOnConflictOp].
+ */
+fun <D: Any> InsertValuesOp<D>.onConflict(primaryKey: PrimaryKey, action: ConflictContext<D>.() -> ConflictingUpdateSetOp<D>?) = InsertOnConflictOp(this, *primaryKey.columns, action = action(ConflictContext(entity)))
+
+/**
+ * Creates a [InsertOnConflictOp].
+ * This will start an ``on conflict`` clause.
+ *
+ * @param primaryKey the ``conflict_target``.
+ * @param action the [ConflictingUpdateSetOp] which is the ``conflict_action``.
+ * @return the [InsertOnConflictOp].
+ */
+fun <D: Any> InsertValuesOp<D>.onConflictDoUpdate(primaryKey: PrimaryKey, action: ConflictingUpdateSetOp<D>) = InsertOnConflictOp(this, *primaryKey.columns, action = action)
+
+/**
+ * Creates a [InsertOnConflictOp].
+ * This will start an ``on conflict`` clause.
+ *
+ * @param primaryKey the ``conflict_target``.
+ * @return the [InsertOnConflictOp].
+ */
+fun <D: Any> InsertValuesOp<D>.onConflictDoNothing(primaryKey: PrimaryKey) = InsertOnConflictOp(this, *primaryKey.columns, action = null)
 
 /**
  * Creates a [InsertOnConflictOp].

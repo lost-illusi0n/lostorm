@@ -3,7 +3,7 @@ package net.lostillusion.lostorm.mapper
 /**
  * Represents an SQL Primary Key with the specified [columns].
  *
- * @param columns The [Column]s to be part of the Primay Key.
+ * @param columns The [Column]s to be part of the Primary Key.
  */
 class PrimaryKey(vararg val columns: Column<*, *>) {
     /**

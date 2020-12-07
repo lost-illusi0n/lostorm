@@ -36,7 +36,7 @@ class EqExpression<V: Any>(
  */
 class NeqExpression<V: Any>(
     internal val column: Column<V, *>,
-    internal val value: V?
+    private val value: V?
 ): Expression {
     override fun generateExpression(): String = "${column.columnName} != ${toSafeSQL(column.valueConverter.orConvertToSql(value))}"
 }
@@ -54,6 +54,31 @@ class AndExpression(
     override fun generateExpression(): String = "${first.generateExpression()} and ${second.generateExpression()}"
 }
 
+class OrderByExpression(
+    private val column: Column<*, *>,
+    private val orderBy: OrderBy,
+    private val nullsOrder: NullsOrder?
+): Expression {
+    override fun generateExpression(): String = "${column.columnName} ${orderBy.sql} ${nullsOrder?.sql ?: ""}".trim()
+}
+
+class ValueInExpression<V: Any>(
+    private val column: Column<V, *>,
+    private vararg val values: V
+): Expression {
+    override fun generateExpression(): String = "${column.columnName} in (${values.map(column.valueConverter::convertToSql).joinToString(", ", transform = ::toSafeSQL)})"
+}
+
+enum class OrderBy(internal val sql: String) {
+    ASCENDING("asc"),
+    DESCENDING("desc")
+}
+
+enum class NullsOrder(internal val sql: String) {
+    NULLS_FIRST("nulls first"),
+    NULLS_LAST("nulls last")
+}
+
 infix fun <V: Any> Column<V, *>.eq(value: V?) =
     EqExpression(this, value)
 
@@ -61,3 +86,9 @@ infix fun <V: Any> Column<V, *>.neq(value: V?) =
     NeqExpression(this, value)
 
 infix fun Expression.and(other: Expression) = AndExpression(this, other)
+
+fun Column<*, *>.ascending(nullsOrder: NullsOrder? = null)  = OrderByExpression(this, OrderBy.ASCENDING, nullsOrder)
+fun Column<*, *>.descending(nullsOrder: NullsOrder? = null) = OrderByExpression(this, OrderBy.DESCENDING, nullsOrder)
+
+fun <V: Any> Column<V, *>.valueIn(vararg values: V) = ValueInExpression(this, *values)
+infix inline fun <reified V: Any> Column<V, *>.valueIn(values: List<V>) = ValueInExpression(this, *values.toTypedArray())

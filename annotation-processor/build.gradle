@@ -14,6 +14,7 @@ repositories {
 
 dependencies {
     kapt 'com.google.auto.service:auto-service:1.0-rc4'
+    runtime 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'com.google.auto.service:auto-service:1.0-rc4'
     implementation "com.squareup:kotlinpoet:$kotlin_poet"
     implementation "com.squareup:kotlinpoet-metadata:$kotlin_poet"
